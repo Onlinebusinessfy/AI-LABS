@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dibujo y Predicción</title>
+</head>
+<body>
+    <canvas id="drawing-canvas" width="200" height="200" style="border:1px solid #000;"></canvas>
+    <button id="predict-button">Predecir</button>
+    <button id="clear-button">Limpiar</button>
+
+    <script>
+        const canvas = document.getElementById('drawing-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Configuración del evento de dibujo
+        let drawing = false;
+
+        canvas.addEventListener('mousedown', () => {
+            drawing = true;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            drawing = false;
+            ctx.beginPath();
+        });
+
+        canvas.addEventListener('mousemove', draw);
+
+        function draw(event) {
+            if (!drawing) return;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'black';
+
+            ctx.lineTo(event.clientX - canvas.offsetLeft, event.clientY - canvas.offsetTop);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(event.clientX - canvas.offsetLeft, event.clientY - canvas.offsetTop);
+        }
+
+        document.getElementById('predict-button').addEventListener('click', sendCanvasImage);
+        
+        // Función para limpiar el lienzo
+        document.getElementById('clear-button').addEventListener('click', clearCanvas);
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el lienzo
+        }
+
+        async function sendCanvasImage() {
+            const dataURL = canvas.toDataURL('image/png');
+            const blob = await (await fetch(dataURL)).blob(); // Convertir a blob
+            const formData = new FormData();
+            formData.append('file', blob); // Agregar el blob como archivo
+
+            const response = await fetch('/predict/', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                const prediction = await response.json();
+                alert(`Predicción: ${prediction.prediccion}`);
+            } else {
+                console.error('Error en la predicción', response);
+                alert("Hubo un error al realizar la predicción.");
+            }
+        }
+    </script>
+</body>
+</html>
